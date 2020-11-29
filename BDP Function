@@ -1,0 +1,114 @@
+#IMPORT MODULES
+from messer import DataCube
+import pandas as pd
+from messer.utilities.date_range import DateRange
+from datetime import datetime, timedelta
+import workdays
+import numbers
+
+
+#The following is a class NineMastsDB. Currently, the class has two methods: BDP and BDH.
+#A user must initialize an object to the class. For example: x = NineMastsDB()
+#The user can then call the Objects' methods, inputting certain fields. 
+
+#Example BDP Function: User wishes to view the VOLATILITY_360D, PX_LAST, VOLATILITY_90D, VOLATILITY_180D, VOLUME for KOSPI2, NKY, DAX
+#The above is done in the line below.
+#print(x.BDP(["KOSPI2","NKY","DAX"], ["VOLATILITY_360D","PX_LAST", "VOLATILITY_90D", "VOLATILITY_180D","VOLATILITY_360D","VOLUME"]))
+
+#Example BDH Function: User wishes to view the PX_LAST for KOSPI2 from dates 10/5/2020 to 10/14/2020
+#The above is done in the line below.
+#print(x.BDH("KOSPI2","PX_LAST", "10/5/2020", "10/14/2020"))
+
+class NineMastsDB:
+    def __init__(self, Server = 'nm.api.messerfs.com', Api_Key = 'HOWNdCOWV0oCOSXLnzU-GkP-sRHUI695', dc = None,
+                 Source = 'DataLicense', Exact_Date = False):
+        self.Server = Server
+        self.Api_Key = Api_Key
+        self.Source = Source
+        self.Exact_Date = Exact_Date
+        self.dc = DataCube(server=Server, api_key=Api_Key)
+
+    def __repr__(self):
+        Security = self.Security
+        Field = self.Field
+        Source = self.Source
+        return (f'BDP Function returning: Security: {Security} || Field: {Field} || Source: {Source}')
+
+    def BDP(self, Security = ["NKY"], Field = ["PX_LAST"]):
+        if not isinstance(Security,list):
+            Security = [Security]
+        if not isinstance(Field,list):
+            Field = [Field]
+        Source = self.Source
+        Exact_Date = self.Exact_Date
+        dc = self.dc
+        def build_requests(securities, attributes):
+            for sec in securities:
+                for atr in attributes:
+                    yield {
+                        'ExactDate': Exact_Date,
+                        'Security': sec,
+                        'ReferenceDate': datetime.now().strftime('%Y-%m-%dT00:00:00Z'),
+                        'Source': Source,
+                        'Attribute': atr}
+        Messer_List = dc.market_data.get_single_batch(list(build_requests(Security, Field)))
+        for index in range(len(Messer_List)):
+            Messer_Dict = Messer_List[index]
+            for uselesskeys in ['Adjustment', 'CreateDateTime', 'Extended', 'Id', 'ModifiedDateTime', 'ReferenceDate',
+                                'Source']:
+                Messer_Dict.pop(uselesskeys, None)
+        result = Messer_List
+        data = {}
+        for x in result:
+            keys = data.keys()
+            if x["Security"] in keys:
+                data[x["Security"]][x["Attribute"]] = x["Amount"]
+            else:
+                data[x["Security"]] = {}
+                data[x["Security"]][x["Attribute"]] = x["Amount"]
+            df = pd.DataFrame(data)
+            BDPFunction = df.transpose()
+        return(BDPFunction)
+
+
+    def BDH(self, Security = ["NKY"], Field = ["PX_LAST"], Start_Date = datetime.strftime((datetime.now()-timedelta(10)),"%m/%d/%Y"),
+                 End_Date = datetime.strftime(datetime.now(),"%m/%d/%Y"),Source='DataLicense'):
+        dc = self.dc
+        Initial_Date = datetime.strptime(Start_Date, "%m/%d/%Y")
+        Int_Year = Initial_Date.year; Int_Month = Initial_Date.month; Int_Day = Initial_Date.day
+        Timeseries_Dict = dc.market_data.get_series(Security, Field, Source,
+                                                    ref_date=DateRange(
+                                                        from_date=datetime(Int_Year, Int_Month, Int_Day)),
+                                                    stats=True)
+        NeededKey = Timeseries_Dict['Series']
+        for index in range(len(NeededKey)):
+            NK = NeededKey[index]
+            for uselesskeys in ['Adjustment', 'CreateDateTime', 'Extended', 'Id', 'ModifiedDateTime']:
+                NK.pop(uselesskeys, None)
+        database = NeededKey
+        Ending_Date = datetime.strptime(End_Date, "%m/%d/%Y")
+        number_days = workdays.networkdays(Initial_Date, Ending_Date)
+        data = {}
+        for x in database:
+            keys = data.keys()
+            if x['Amount'] in keys:
+                data[x['Amount' + '1']] = data[x['Amount']]
+            else:
+                data[x['Amount']] = {}
+                data[x['Amount']]
+        daterangedata = []
+        for x in list(data)[0:number_days]:
+            daterangedata.append(x)
+        dates = {}
+        for i in database:
+            keys = dates.keys()
+            if i['ReferenceDate'] in keys:
+                dates[i['ReferenceDate'][0:10]] = [i['ReferenceDate'][0:10]]
+            else:
+                dates[i['ReferenceDate'][0:10]] = {}
+                dates[i['ReferenceDate'][0:10]] = [i['ReferenceDate'][0:10]]
+        indexrangedata = []
+        for x in list(dates)[0:number_days]:
+            indexrangedata.append(x)
+        df = pd.DataFrame(daterangedata, columns=[Field], index=indexrangedata)
+        return (df)
