@@ -1,1 +1,21 @@
+#The Class NineMastsDB currently has two methods: BDP and BDH.
+#The Class supports requests made by the user to retrieve certain data. Currently, the Class supports two types of user requests.
+#1) The First is BDP, which replicates the Bloomberg Data Point formula
+#2) The second is BDH, which replicates the Bloomberg Data History formula
+#A user must initialize an object to the class. For example: x = NineMastsDB()
+#The user can then call the Objects' methods, inputting certain fields. 
 
+#Single Field Example: BDP Function
+#Example BDP Function: User wishes to view the PX_LAST for NKY
+#The above is done in the line below.
+#print(x.BDP("NKY", "PX_LAST"))
+
+#Multiple Field Example: BDP Function
+#Example BDP Function: User wishes to view the VOLATILITY_360D, PX_LAST, VOLATILITY_90D, VOLATILITY_180D, VOLUME for KOSPI2, NKY, DAX
+#The above is done in the line below.
+#print(x.BDP(["KOSPI2","NKY","DAX"], ["VOLATILITY_360D","PX_LAST", "VOLATILITY_90D", "VOLATILITY_180D","VOLATILITY_360D","VOLUME"]))
+
+#BDH Function only supports single field requests
+#Example BDH Function: User wishes to view the PX_LAST for KOSPI2 from dates 10/5/2020 to 10/14/2020
+#The above is done in the line below.
+#print(x.BDH("KOSPI2","PX_LAST", "10/5/2020", "10/14/2020"))
