@@ -5,6 +5,10 @@
 #A user must initialize an object to the class. For example: x = NineMastsDB()
 #The user can then call the Objects' methods, inputting certain fields. 
 
+#NOTE: Before proceeding with the below examples:
+#Initialize an Object to the NineMastsDB Class (Write and Run the following code)
+#x = NineMastsDB()
+
 #Single Field Example: BDP Function
 #Example BDP Function: User wishes to view the PX_LAST for NKY
 #The above is done in the line below.
